@@ -17,10 +17,10 @@ limitations under the License.
 package sinks
 
 import (
-	"encoding/json"
+	"fmt"
+	"strings"
 
-	"github.com/golang/glog"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 // GlogSink is the most basic sink
@@ -37,10 +37,49 @@ func NewGlogSink() EventSinkInterface {
 // UpdateEvents implements the EventSinkInterface
 func (gs *GlogSink) UpdateEvents(eNew *v1.Event, eOld *v1.Event) {
 	eData := NewEventData(eNew, eOld)
-
-	if eJSONBytes, err := json.Marshal(eData); err == nil {
-		glog.Info(string(eJSONBytes))
-	} else {
-		glog.Warningf("Failed to json serialize event: %v", err)
+	obj := eData.Event
+	firstTimestamp := obj.FirstTimestamp.Time
+	if obj.FirstTimestamp.IsZero() {
+		firstTimestamp = obj.EventTime.Time
 	}
+
+	lastTimestamp := obj.LastTimestamp.Time
+	if obj.LastTimestamp.IsZero() {
+		lastTimestamp = firstTimestamp
+	}
+
+	var target string
+	if len(obj.InvolvedObject.Name) > 0 {
+		target = fmt.Sprintf("%s/%s", strings.ToLower(obj.InvolvedObject.Kind), obj.InvolvedObject.Name)
+	} else {
+		target = strings.ToLower(obj.InvolvedObject.Kind)
+	}
+
+	fmt.Printf("%v\t%v\t%v\ttarget=%v\tsource=%v\n", lastTimestamp, obj.Type, strings.TrimSpace(obj.Message), target, formatEventSource(obj.Source, obj.ReportingController, obj.ReportingInstance))
+	return
+}
+
+// formatEventSource formats EventSource as a comma separated string excluding Host when empty.
+// It uses reportingController when Source.Component is empty and reportingInstance when Source.Host is empty
+func formatEventSource(es v1.EventSource, reportingController, reportingInstance string) string {
+	return formatEventSourceComponentInstance(
+		firstNonEmpty(es.Component, reportingController),
+		firstNonEmpty(es.Host, reportingInstance),
+	)
+}
+
+func firstNonEmpty(ss ...string) string {
+	for _, s := range ss {
+		if len(s) > 0 {
+			return s
+		}
+	}
+	return ""
+}
+
+func formatEventSourceComponentInstance(component, instance string) string {
+	if len(instance) == 0 {
+		return component
+	}
+	return component + ", " + instance
 }
