@@ -15,8 +15,8 @@
 TARGET = eventrouter
 GOTARGET = github.com/heptiolabs/$(TARGET)
 BUILDMNT = /src/
-REGISTRY ?= gcr.io/heptio-images
-VERSION ?= v0.3
+REGISTRY ?= gcr.io/pingcap-public
+VERSION ?= v0.4
 IMAGE = $(REGISTRY)/$(BIN)
 BUILD_IMAGE ?= golang:1.12.9
 DOCKER ?= docker
@@ -36,7 +36,7 @@ DOCKER_BUILD ?= $(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_
 all: container
 
 container:
-	$(DOCKER_BUILD) 'CGO_ENABLED=0 go build'
+	$(DOCKER_BUILD) 'CGO_ENABLED=0 go build -mod=vendor'
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
 push:
