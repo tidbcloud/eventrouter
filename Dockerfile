@@ -1,23 +1,15 @@
-# Copyright 2017 Heptio Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+FROM golang:1.16 as builder
 
-FROM alpine:3.9
-MAINTAINER Timothy St. Clair "tstclair@heptio.com"  
+RUN mkdir /build
+COPY . /build
+RUN cd /build && make build
 
-WORKDIR /app
+FROM gcr.io/pingcap-public/pingcap/alpine-glibc:alpine-3.14.3
+
 RUN apk update --no-cache && apk add ca-certificates
-ADD eventrouter /app/
+
+COPY --from=builder /build/eventrouter /app/eventrouter
+
 USER nobody:nobody
 
 CMD ["/bin/sh", "-c", "/app/eventrouter -v 3 -logtostderr"]

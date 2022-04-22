@@ -35,6 +35,9 @@ DOCKER_BUILD ?= $(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_
 
 all: container
 
+build:
+	CGO_ENABLED=0 go build
+
 container:
 	$(DOCKER_BUILD) 'CGO_ENABLED=0 go build -mod=vendor'
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
