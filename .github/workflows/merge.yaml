@@ -18,7 +18,7 @@ concurrency:
 
 env:
   GO_VERSION: '1.17'
-  GCR_REG: gcr.io/pingcap-public/eventrouter
+  GCR_REG: gcr.io/pingcap-public
   PROJECT_ID: pingcap-public
   IMAGE_NAME: eventrouter
   # set the commit id as default value
