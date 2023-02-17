@@ -1,0 +1,68 @@
+name: Merge CI
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "*"
+# Uncomment below lines to debug this action in PR
+  pull_request:
+    branches:
+      - master
+
+# Concurrency ensures that only a single job or workflow using the same concurrency group will run at a time.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.17'
+  GCR_REG: gcr.io/pingcap-public/eventrouter
+  PROJECT_ID: pingcap-public
+  IMAGE_NAME: eventrouter
+  # set the commit id as default value
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  push-image:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - id: auth
+        uses: google-github-actions/auth@v0.4.0
+        with:
+          credentials_json: ${{ secrets.PUB_GCR_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.3.0
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Test gcloud CLI
+        run: gcloud info
+
+      - name: Configure docker to use the gcloud command-line tool as a credential helper
+        run: |
+          gcloud auth configure-docker -q
+
+      - name: Get tag name if any
+        uses: olegtarasov/get-tag@v2.1
+        id: tagName
+
+      - name: Use the git tag name as the image tag, if any
+        if: steps.tagName.outputs.tag != ''
+        run: |
+          echo "IMAGE_TAG=${{ steps.tagName.outputs.tag }}" >> $GITHUB_ENV
+
+      - name: Build and push the observability image
+        run: docker build -t ${{ env.GCR_REG }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+
+      - name: Push the image to GCR
+        run: docker push ${{ env.GCR_REG }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
