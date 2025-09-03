@@ -27,7 +27,7 @@ env:
 
 jobs:
   push-image:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-lastest
     steps:
       - uses: actions/checkout@v2
 
