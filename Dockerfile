@@ -1,18 +1,15 @@
-FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.23-openshift-4.19 AS builder
-WORKDIR  /go/src/github.com/openshift/eventrouter
-USER 0
+FROM golang:1.24 as builder
 
-COPY ./go.mod ./go.sum ./
-RUN go mod download
-COPY Makefile *.go ./
-COPY sinks ./sinks
+RUN mkdir /build
+COPY . /build
+RUN cd /build && make build
 
-RUN make build
+FROM alpine:3.22.1
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal
+RUN apk update --no-cache && apk add ca-certificates
 
-ARG BUILD_VERSION=0.5.0
-USER 1000
-COPY --from=builder /go/src/github.com/openshift/eventrouter/eventrouter /bin/eventrouter
-CMD ["/bin/eventrouter", "-v", "3", "-logtostderr"]
-LABEL version="v${BUILD_VERSION}"
+COPY --from=builder /build/eventrouter /app/eventrouter
+
+USER nobody:nobody
+
+CMD ["/bin/sh", "-c", "/app/eventrouter -v 3 -logtostderr"]
