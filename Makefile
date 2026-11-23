@@ -13,12 +13,12 @@
 # limitations under the License.
 
 TARGET = eventrouter
-GOTARGET = github.com/heptiolabs/$(TARGET)
+GOTARGET = github.com/openshift/$(TARGET)
 BUILDMNT = /src/
 REGISTRY ?= gcr.io/pingcap-public
 VERSION ?= v0.5
 IMAGE = $(REGISTRY)/$(BIN)
-BUILD_IMAGE ?= golang:1.24.6
+BUILD_IMAGE ?= golang:1.27.4
 DOCKER ?= docker
 DIR := ${CURDIR}
 
