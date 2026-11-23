@@ -1,10 +1,10 @@
-FROM golang:1.25.12 as builder
+FROM golang:1.27.4 AS builder
 
 RUN mkdir /build
 COPY . /build
 RUN cd /build && make build
 
-FROM alpine:3.22.1
+FROM alpine:3.24.4
 
 RUN apk update --no-cache && apk upgrade --no-cache && apk add --no-cache ca-certificates
 
